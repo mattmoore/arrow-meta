@@ -17,7 +17,6 @@ import arrow.meta.quotes.element.WhenEntry
 import arrow.meta.quotes.element.whencondition.WhenCondition
 import arrow.meta.quotes.expression.BinaryExpression
 import arrow.meta.quotes.expression.BlockExpression
-import arrow.meta.quotes.expression.CallExpression
 import arrow.meta.quotes.expression.DotQualifiedExpression
 import arrow.meta.quotes.expression.IfExpression
 import arrow.meta.quotes.expression.IsExpression
@@ -41,7 +40,6 @@ import arrow.meta.quotes.nameddeclaration.stub.typeparameterlistowner.TypeAlias
 import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtBreakExpression
-import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
@@ -103,15 +101,6 @@ fun Meta.breakExpression(
   map: BreakExpression.(KtBreakExpression) -> Transform<KtBreakExpression>
 ): ExtensionPhase =
   quote(ctx, match, map) { BreakExpression(it) }
-
-/**
- * @see [CallExpression]
- */
-fun Meta.callExpression(
-  match: KtCallExpression.() -> Boolean,
-  map: CallExpression.(KtCallExpression) -> Transform<KtCallExpression>
-) : ExtensionPhase =
-  quote(match, map) { CallExpression(it) }
 
 /**
  * @see [CatchClause]
