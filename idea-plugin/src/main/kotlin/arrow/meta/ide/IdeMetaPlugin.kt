@@ -5,6 +5,7 @@ import arrow.meta.MetaPlugin
 import arrow.meta.ide.dsl.IdeSyntax
 import arrow.meta.ide.internal.registry.IdeInternalRegistry
 import arrow.meta.ide.phases.IdeContext
+import arrow.meta.ide.plugins.fpGuide.fpGuide
 import arrow.meta.ide.plugins.initial.initialIdeSetUp
 import arrow.meta.ide.plugins.proofs.typeProofsIde
 import arrow.meta.phases.CompilerContext
@@ -20,6 +21,10 @@ open class IdeMetaPlugin : MetaPlugin(), IdeInternalRegistry, IdeSyntax {
   //purity +
   //comprehensionsIdePlugin +
     //opticsIdePlugin +
-    listOf(initialIdeSetUp, //quotes,
-      typeProofsIde)
+    listOf(
+      initialIdeSetUp,
+      //quotes,
+      typeProofsIde,
+      fpGuide
+    )
 }
