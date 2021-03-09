@@ -15,7 +15,10 @@ val Meta.patternMatching: CliPlugin
         enableIr(),
         suppressDiagnostic { ctx.suppressPatMatUnresolvedReference(it) },
         patternExpressionAnalysis(),
-        irPatternMatching { PatternMatchingIrCodegen(this) { generatePatternExpressionIr(it) } },
+//        irPatternMatching { PatternMatchingIrCodegen(this) { generatePatternExpressionIr(it) } },
+        IrGeneration { compilerContext, moduleFragment, pluginContext ->
+          irPatternMatching(compilerContext, moduleFragment, pluginContext)
+        },
         irDump()
       )
     }

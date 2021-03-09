@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.KtWhenEntry
+import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingContext.CALL
 import org.jetbrains.kotlin.resolve.BindingContext.EXPRESSION_TYPE_INFO
@@ -19,6 +20,8 @@ import org.jetbrains.kotlin.resolve.BindingContext.PROCESSED
 import org.jetbrains.kotlin.resolve.BindingContext.REFERENCE_TARGET
 import org.jetbrains.kotlin.resolve.BindingContext.RESOLVED_CALL
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
+import org.jetbrains.kotlin.resolve.calls.callUtil.getParentCall
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.components.InferenceSession
 import org.jetbrains.kotlin.resolve.calls.model.DataFlowInfoForArgumentsImpl
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCallImpl
@@ -143,6 +146,10 @@ fun PatternResolutionContext.referPlaceholder(
     expression,
     emptyList()
   )
+  val candidateType = expression
+    .getParentCall(bindingTrace.bindingContext)
+    .getResolvedCall(bindingTrace.bindingContext)
+    ?.resultingDescriptor?.valueParameters?.get(index)?.type
   val candidateCall = ResolvedCallImpl.create(
     ResolutionCandidate.create(
       call,
@@ -150,7 +157,7 @@ fun PatternResolutionContext.referPlaceholder(
         index,
         expression,
         bindingTrace,
-        bindingTrace.getType(expression) ?: module.builtIns.nothingType
+        candidateType ?: module.builtIns.nothingType
       ),
       null,
       ExplicitReceiverKind.DISPATCH_RECEIVER,

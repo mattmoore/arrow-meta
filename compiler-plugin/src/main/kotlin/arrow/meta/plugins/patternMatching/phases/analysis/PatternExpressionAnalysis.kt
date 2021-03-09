@@ -3,6 +3,7 @@ package arrow.meta.plugins.patternMatching.phases.analysis
 import arrow.meta.Meta
 import arrow.meta.phases.CompilerContext
 import arrow.meta.phases.analysis.AnalysisHandler
+import arrow.meta.phases.analysis.dfs
 import arrow.meta.phases.analysis.traverseFilter
 import arrow.meta.plugins.patternMatching.phases.analysis.PatternExpression.Companion.parsePatternExpression
 import org.jetbrains.kotlin.container.get
@@ -28,6 +29,19 @@ fun Meta.patternExpressionAnalysis(): AnalysisHandler =
     },
     analysisCompleted = { project, module, bindingTrace, files ->
       val context = PatternResolutionContext(this)
+
+      val caseExpressions = files.flatMap { file ->
+        context.caseExpressions(file) { expr ->
+          val (entry, expr) = caseExpressionResolution(expr)
+          expr?.parameters?.forEachIndexed { index, param ->
+            if (param is PatternExpression.Param.Captured) {
+              val nameExpression = expr.paramExpression(index) as KtSimpleNameExpression
+              nameExpression
+            }
+          }
+          Pair(entry, expr)
+        }
+      }
 
       val patternExpressions = files.flatMap { file ->
         context.resolvePatternExpression(file) { whenExpr ->
@@ -56,6 +70,14 @@ fun Meta.patternExpressionAnalysis(): AnalysisHandler =
       null
     }
   )
+
+fun PatternResolutionContext.caseExpressions(file: KtFile, resolution: PatternResolutionContext.(KtCallExpression) -> Pair<KtCallExpression, PatternExpression?>) =
+  file
+    .dfs { it is KtCallExpression && it.firstChild.textMatches("case") }
+    .map { resolution(it as KtCallExpression) }
+
+fun PatternResolutionContext.caseExpressionResolution(expression: KtCallExpression): Pair<KtCallExpression, PatternExpression?> =
+  Pair(expression, parsePatternExpression(expression))
 
 fun PatternResolutionContext.resolvePatternExpression(file: KtFile, resolution: PatternResolutionContext.(KtWhenExpression) -> List<PatternExpression>) =
   file.traverseFilter(KtWhenExpression::class.java) { resolution(it) }.flatten()
