@@ -44,7 +44,7 @@ class PatternMatchingTests {
   """.trimIndent()
 
   @Test
-  fun `without case expression fails with unresolved references for captured params`() {
+  fun `with case expression and all wildcards`() {
     val code =
       """$prelude
          $person
@@ -57,31 +57,11 @@ class PatternMatchingTests {
 
     code verify {
       allOf(
-        failsWith { it.contains("Unresolved reference: _") }
-      )
-    }
-  }
-
-  @Test
-  fun `with case expression and all wildcards`() {
-    val code =
-      """$prelude
-         $person
-
-         val result = when (person) {
-           case(Person(_, _)) -> "Matched"
-           else -> "Not matched"
-         }
-       """
-
-    code verify {
-      allOf(
         "result".source.evalsTo("Matched")
       )
     }
   }
 
-  @Disabled
   @Test
   fun `match expression with const params`() {
     val code =
@@ -89,8 +69,8 @@ class PatternMatchingTests {
          $person
 
          val result = when (person) {
-           case(Person("Moore", "Matt")) -> "Wrong match"
-           case(Person("Matt", "Moore")) -> "Matched"
+           Person("Moore", "Matt") -> "Wrong match"
+           Person("Matt", "Moore") -> "Matched"
            else -> "Not matched"
          }
          """
@@ -102,7 +82,6 @@ class PatternMatchingTests {
     }
   }
 
-  @Disabled
   @Test
   fun `match expression with placeholder`() {
     val code =
@@ -110,7 +89,7 @@ class PatternMatchingTests {
          $person
 
          val result = when (person) {
-           case(Person(_, "Moore")) -> "Matched"
+           Person(_, "Moore") -> "Matched"
            else -> "Not matched"
          }
          """
@@ -130,7 +109,7 @@ class PatternMatchingTests {
          $person
 
          val result = when (person) {
-           case(Person("Matt", _)) -> "Matched"
+           Person("Matt", _) -> "Matched"
            else -> "Not matched"
          }
          """
@@ -150,7 +129,7 @@ class PatternMatchingTests {
          $person
 
          val result = when (person) {
-           case(Person(capturedFirstName, _)) -> capturedFirstName
+           Person(capturedFirstName, _) -> capturedFirstName
            else -> "Not matched"
          }
          """
@@ -170,7 +149,7 @@ class PatternMatchingTests {
          $person
 
          val result = when (person) {
-           case(Person(_, capturedSecondName)) -> capturedSecondName
+           Person(_, capturedSecondName) -> capturedSecondName
            else -> "Not matched"
          }
          """
@@ -182,7 +161,6 @@ class PatternMatchingTests {
     }
   }
 
-  @Disabled
   @Test
   fun `both captured params result in value`() {
     val code =
@@ -190,7 +168,7 @@ class PatternMatchingTests {
          $person
 
          val result = when (person) {
-           case(Person(capturedFirstName, capturedSecondName)) -> capturedFirstName + capturedSecondName
+           Person(capturedFirstName, capturedSecondName) -> capturedFirstName + capturedSecondName
            else -> "Not matched"
          }
          """
@@ -210,7 +188,7 @@ class PatternMatchingTests {
          $person
 
          val result = when (person) {
-           case(Person(capturedFirstName, capturedSecondName)) -> {
+           Person(capturedFirstName, capturedSecondName) -> {
              listOf(capturedFirstName, capturedSecondName)
            }
            else -> listOf("Not matched")
@@ -233,7 +211,7 @@ class PatternMatchingTests {
 
          fun resolve(person: Person) =
            when (person) {
-             case(Person(capturedFirstName, capturedSecondName)) -> capturedFirstName + capturedSecondName
+             Person(capturedFirstName, capturedSecondName) -> capturedFirstName + capturedSecondName
              else -> "Not matched"
            }
 
@@ -256,7 +234,7 @@ class PatternMatchingTests {
 
          fun resolve(person: Person) =
            when (person) {
-             case(Person(_, capturedSecondName)) -> _
+             Person(_, capturedSecondName) -> _
              else -> "Not matched"
            }
 
@@ -278,7 +256,7 @@ class PatternMatchingTests {
          $person
          fun resolve(person: Person) =
            when (person) {
-             case(Person(_, param123)) -> param123
+             Person(_, param123) -> param123
              else -> "Not matched"
            }
 
@@ -301,8 +279,8 @@ class PatternMatchingTests {
 
          fun resolve(number: Number): String {
            return when (number) {
-             case(Number.One(_)) -> "Matched"
-             case(Number.Other(value)) -> value.toString()
+             Number.One(_) -> "Matched"
+             Number.Other(value) -> value.toString()
              else -> "Not matched"
            }
          }

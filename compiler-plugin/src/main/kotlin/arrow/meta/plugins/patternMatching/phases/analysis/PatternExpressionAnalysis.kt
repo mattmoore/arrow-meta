@@ -11,14 +11,8 @@ import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtCallExpression
-import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtNameReferenceExpression
-import org.jetbrains.kotlin.psi.KtSimpleNameExpression
-import org.jetbrains.kotlin.psi.KtWhenCondition
-import org.jetbrains.kotlin.psi.KtWhenEntry
-import org.jetbrains.kotlin.psi.KtWhenExpression
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.getParentOfTypes
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 
@@ -29,47 +23,70 @@ fun Meta.patternExpressionAnalysis(): AnalysisHandler =
     },
     analysisCompleted = { project, module, bindingTrace, files ->
       val context = PatternResolutionContext(this)
+//      val caseExpressions = files.flatMap { file ->
+//        context.caseExpressions(file) { caseExpr ->
+//          val (ktCallExpression, patternExpression) = caseExpressionResolution(caseExpr)
+//          patternExpression?.parameters?.forEachIndexed { index, param ->
+//            if (param is PatternExpression.Param.Captured) {
+//              val nameExpression = patternExpression.paramExpression(index) as KtSimpleNameExpression
+//              bindingTrace.record(PATTERN_EXPRESSION_CAPTURED_PARAMS, nameExpression)
+//              referPlaceholder(nameExpression, index)
+//            }
+//          }
+//          Pair(ktCallExpression, patternExpression)
+//        }
+//      }
 
-      val caseExpressions = files.flatMap { file ->
-        context.caseExpressions(file) { expr ->
-          val (entry, expr) = caseExpressionResolution(expr)
-          expr?.parameters?.forEachIndexed { index, param ->
-            if (param is PatternExpression.Param.Captured) {
-              val nameExpression = expr.paramExpression(index) as KtSimpleNameExpression
-              nameExpression
-            }
-          }
-          Pair(entry, expr)
-        }
-      }
+//      val patternExpressions = files.flatMap { file ->
+//        context.resolvePatternExpression(file) { whenExpr ->
+//          patternExpressionResolution(whenExpr).map { (entry, expr) ->
+//            expr.parameters.forEachIndexed { index, param ->
+//              if (param is PatternExpression.Param.Captured) {
+//                val nameExpression = expr.paramExpression(index) as KtSimpleNameExpression
+//                bindingTrace.record(PATTERN_EXPRESSION_CAPTURED_PARAMS, nameExpression)
+//                referPlaceholder(nameExpression, index)
+//              }
+//            }
+//
+//            if (expr.parameters.any { it is PatternExpression.Param.Captured && !it.isWildcard }) {
+//              val params = fillCapturedParameters(entry, expr)
+//              params.forEach {
+//                bindingTrace.record(PATTERN_EXPRESSION_BODY_PARAMS, it)
+//              }
+//            }
+//
+//            expr
+//          }
+//        }
+//      }
+//      println("Resolved pattern expressions $caseExpressions")
 
       val patternExpressions = files.flatMap { file ->
-        context.resolvePatternExpression(file) { whenExpr ->
-          patternExpressionResolution(whenExpr).map { (entry, expr) ->
-            expr.parameters.forEachIndexed { index, param ->
-              if (param is PatternExpression.Param.Captured) {
-                val nameExpression = expr.paramExpression(index) as KtSimpleNameExpression
-                bindingTrace.record(PATTERN_EXPRESSION_CAPTURED_PARAMS, nameExpression)
-                referPlaceholder(nameExpression, index)
-              }
-            }
-
-            if (expr.parameters.any { it is PatternExpression.Param.Captured && !it.isWildcard }) {
-              val params = fillCapturedParameters(entry, expr)
-              params.forEach {
-                bindingTrace.record(PATTERN_EXPRESSION_BODY_PARAMS, it)
-              }
-            }
-
-            expr
-          }
+        file.patternExpressions.map { expression ->
+          expression
         }
       }
-      println("Resolved pattern expressions $patternExpressions")
 
       null
     }
   )
+
+object PatternExpressionRules {
+  val validParents = arrayOf(
+    KtWhenCondition::class.java
+  )
+
+  val symbols = mapOf(
+    "_" to KtNameReferenceExpression::class.java
+  )
+}
+
+val KtFile.patternExpressions
+  get() = dfs { it is KtNameReferenceExpression && PatternExpressionRules.symbols.contains(it.text) }
+
+val KtExpression.isPatternExpression: Boolean
+  get() = PatternExpressionRules.symbols.contains(text)
+    && null != getParentOfTypes(true, *PatternExpressionRules.validParents)
 
 fun PatternResolutionContext.caseExpressions(file: KtFile, resolution: PatternResolutionContext.(KtCallExpression) -> Pair<KtCallExpression, PatternExpression?>) =
   file

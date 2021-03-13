@@ -27,50 +27,51 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformer
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.BindingContext
 
-//fun Meta.irPatternMatching(f: IrUtils.(IrExpression) -> IrExpression?): IRGeneration =
-//  IrGeneration { compilerContext, moduleFragment, pluginContext ->
-//    moduleFragment.transformChildren(object : IrElementTransformer<Unit> {
-//      override fun visitExpression(expression: IrExpression, data: Unit): IrExpression =
-//        f(IrUtils(pluginContext, compilerContext), expression) ?: super.visitExpression(expression, data)
-//    }, Unit)
-//  }
-
-fun irPatternMatching(
-  compilerContext: CompilerContext,
-  moduleFragment: IrModuleFragment,
-  pluginContext: IrPluginContext
-): Unit =
-  moduleFragment.files.forEach { file ->
-    file.accept(
-      object : IrElementTransformer<IrSymbolOwner?> {
-        private val irUtils = IrUtils(pluginContext, compilerContext)
-        override fun visitDeclaration(declaration: IrDeclaration, data: IrSymbolOwner?): IrStatement =
-          if (declaration is IrSymbolOwner) {
-            super.visitDeclaration(declaration, declaration)
-          } else {
-            super.visitDeclaration(declaration, data)
-          }
-
-        override fun visitWhen(expression: IrWhen, data: IrSymbolOwner?): IrExpression {
-          return super.visitWhen(expression, data).also {
-            val builder = DeclarationIrBuilder(
-              pluginContext,
-              data!!.symbol,
-              expression.startOffset,
-              expression.endOffset
-            )
-            irUtils.patchIrWhen(expression, builder)
-          }
-        }
-      },
-      null
-    )
+fun Meta.irPatternMatching(f: IrUtils.(IrCall) -> IrElement?): IRGeneration =
+  IrGeneration { compilerContext, moduleFragment, pluginContext ->
+    moduleFragment.transformChildren(object : IrElementTransformer<Unit> {
+      override fun visitCall(call: IrCall, data: Unit): IrElement {
+        return call
+      }
+    }, Unit)
   }
+
+//fun irPatternMatching(
+//  compilerContext: CompilerContext,
+//  moduleFragment: IrModuleFragment,
+//  pluginContext: IrPluginContext
+//): Unit =
+//  moduleFragment.files.forEach { file ->
+//    file.accept(
+//      object : IrElementTransformer<IrSymbolOwner?> {
+//        private val irUtils = IrUtils(pluginContext, compilerContext)
+//        override fun visitDeclaration(declaration: IrDeclaration, data: IrSymbolOwner?): IrStatement =
+//          if (declaration is IrSymbolOwner) {
+//            super.visitDeclaration(declaration, declaration)
+//          } else {
+//            super.visitDeclaration(declaration, data)
+//          }
+//
+//        override fun visitWhen(expression: IrWhen, data: IrSymbolOwner?): IrExpression {
+//          return super.visitWhen(expression, data).also {
+//            val builder = DeclarationIrBuilder(
+//              pluginContext,
+//              data!!.symbol,
+//              expression.startOffset,
+//              expression.endOffset
+//            )
+//            irUtils.patchIrWhen(expression, builder)
+//          }
+//        }
+//      },
+//      null
+//    )
+//  }
 
 class PatternMatchingIrCodegen(
   val irUtils: IrUtils
 ) {
-  fun CompilerContext.generatePatternExpressionIr(it: IrExpression): IrExpression? {
+  fun CompilerContext.generatePatternExpressionIr(it: IrCall): IrCall? {
     val targetType = it.type.originalKotlinType
     return it
   }
